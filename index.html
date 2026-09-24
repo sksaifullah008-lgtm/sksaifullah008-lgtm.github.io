@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0f0c">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Nescio</title>
+<style>
+  :root{
+    --bg: #0a0f0c;
+    --sidebar: #0c120e;
+    --panel: #111a14;
+    --panel-2: #17221a;
+    --line: rgba(255,255,255,0.07);
+    --text: #eef5ee;
+    --muted: #8ea38e;
+    --green: #7ed957;
+    --green-dim: #16281a;
+    --green-soft: rgba(126,217,87,0.14);
+    --radius: 16px;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; margin:0; }
+  body{
+    background: var(--bg); color:var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing:antialiased;
+    display:flex; min-height:100vh;
+  }
+  video{ display:none; }
+
+  /* ---------- sidebar ---------- */
+  .sidebar{ width:220px; flex-shrink:0; background:var(--sidebar); border-right:1px solid var(--line); padding:22px 14px; display:flex; flex-direction:column; gap:26px; }
+  .brand{ display:flex; align-items:center; gap:10px; padding:0 8px; }
+  .brand .mark{ width:30px; height:30px; border-radius:8px; background:var(--green-soft); display:grid; grid-template-columns:1fr 1fr; gap:3px; padding:5px; }
+  .brand .mark i{ background:var(--green); border-radius:2px; }
+  .brand span{ font-weight:700; font-size:15px; }
+  nav{ display:flex; flex-direction:column; gap:4px; }
+  .nav-item{ display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; color:var(--muted); font-size:14px; cursor:default; }
+  .nav-item.active{ background:var(--green-soft); color:var(--green); font-weight:600; }
+  .nav-item .ic{ font-size:15px; width:18px; text-align:center; }
+
+  /* ---------- main ---------- */
+  main{ flex:1; padding: 26px 26px 90px; }
+  .topbar{ display:flex; justify-content:flex-end; align-items:center; gap:10px; margin-bottom:22px; }
+  .ghost-btn{ background:var(--panel); border:1px solid var(--line); color:var(--muted); padding:9px 14px; border-radius:10px; font-size:13px; }
+  .avatar{ width:36px; height:36px; border-radius:50%; background:var(--green-soft); color:var(--green); display:flex; align-items:center; justify-content:center; font-size:16px; }
+
+  .flow{ max-width:760px; margin:0 auto; display:flex; flex-direction:column; align-items:stretch; }
+  .connector{ display:flex; justify-content:center; padding:8px 0; color:var(--muted); }
+  .connector .circ{ width:26px; height:26px; border-radius:50%; background:var(--panel); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:13px; }
+
+  .card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:22px; }
+  .card-head{ display:flex; align-items:center; gap:14px; }
+  .ic-circle{ width:44px; height:44px; border-radius:50%; background:var(--green-dim); color:var(--green); display:flex; align-items:center; justify-content:center; font-size:19px; flex-shrink:0; }
+  .card-title{ font-weight:700; font-size:16px; }
+  .card-sub{ color:var(--muted); font-size:13px; margin-top:2px; }
+  .card-head .right{ margin-left:auto; }
+
+  /* drop zone */
+  #dropzone{
+    border: 2px dashed var(--line); border-radius: var(--radius); padding: 46px 20px; text-align:center; cursor:pointer;
+    transition: all .2s ease; background: var(--panel);
+  }
+  #dropzone:hover, #dropzone.drag{ border-color: var(--green); background: linear-gradient(180deg, var(--green-soft), transparent); }
+  #dropzone .cloud{ width:60px; height:60px; border-radius:50%; background:var(--green-soft); color:var(--green); font-size:26px; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; }
+  #dropzone .big{ font-weight:700; font-size:18px; }
+  #dropzone .hint{ color:var(--muted); font-size:13px; margin-top:8px; }
+  #dropzone .hint b{ color:var(--green); }
+  input[type=file]{ display:none; }
+
+  .status-pill{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); }
+  .status-pill.done{ color:var(--green); }
+  .spinner{ width:14px; height:14px; border-radius:50%; border:2px solid var(--green-soft); border-top-color:var(--green); animation: spin .8s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .btn{ padding:10px 16px; border-radius:10px; border:none; cursor:pointer; font-size:13px; font-weight:600; transition: filter .15s ease, transform .1s ease; }
+  .btn:hover{ filter:brightness(1.08); }
+  .btn:active{ transform:scale(.97); }
+  .btn:disabled{ opacity:.5; cursor:not-allowed; filter:none; }
+  .btn-primary{ background: var(--green); color:#0a1a0c; }
+  .btn-outline{ background:transparent; border:1px solid var(--line); color:var(--text); }
+
+  /* timeline */
+  .timeline-area{ margin-top:22px; }
+  .timeline{ position:relative; height:60px; }
+  .track{ position:absolute; top:28px; left:0; right:0; height:4px; border-radius:4px; background:var(--panel-2); }
+  .track-fill{ position:absolute; top:28px; left:0; height:4px; border-radius:4px; background:var(--green); }
+  .cut-marker{ position:absolute; top:0; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; cursor:grab; user-select:none; }
+  .cut-marker .num{ width:22px; height:22px; border-radius:50%; background:var(--green); color:#0a1a0c; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .cut-marker .stick{ width:2px; height:14px; background:var(--green); }
+  .cut-marker .remove-x{ position:absolute; top:-8px; right:-8px; width:16px; height:16px; border-radius:50%; background:#4a1e1e; color:#ffb4b4; font-size:10px; display:none; align-items:center; justify-content:center; line-height:1; }
+  .cut-marker:hover .remove-x{ display:flex; }
+  .time-labels{ display:flex; justify-content:space-between; margin-top:8px; color:var(--muted); font-size:12px; font-variant-numeric: tabular-nums; }
+
+  /* clips list */
+  .clip-row{ display:flex; align-items:center; gap:14px; padding:14px 0; border-top:1px solid var(--line); }
+  .clip-row:first-of-type{ border-top:none; padding-top:18px; }
+  .clip-thumb-wrap{ position:relative; width:72px; height:72px; border-radius:10px; overflow:hidden; background:#000; flex-shrink:0; cursor:pointer; }
+  .clip-thumb-wrap img{ width:100%; height:100%; object-fit:cover; display:block; opacity:.85; }
+  .clip-thumb-wrap .play{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.25); color:#fff; font-size:20px; }
+  .clip-info{ flex:1; min-width:0; }
+  .clip-name{ font-weight:700; color:var(--green); font-size:14px; cursor:text; display:inline-block; }
+  .clip-name:focus{ outline:1px solid var(--green); border-radius:4px; padding:0 3px; }
+  .clip-time{ font-size:12.5px; color:var(--muted); margin-top:3px; font-variant-numeric: tabular-nums; }
+  .clip-dur{ font-size:12px; color:var(--muted); margin-top:1px; }
+  .clip-actions{ display:flex; align-items:center; gap:8px; flex-shrink:0; position:relative; }
+  .icon-btn{ background:var(--panel-2); border:1px solid var(--line); color:var(--muted); width:34px; height:34px; border-radius:9px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; }
+  .icon-btn:hover{ color:var(--text); }
+  .menu{ position:absolute; top:40px; right:0; background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:6px; min-width:150px; display:none; flex-direction:column; z-index:5; }
+  .menu.open{ display:flex; }
+  .menu button{ background:none; border:none; color:var(--text); text-align:left; padding:8px 10px; border-radius:6px; font-size:13px; cursor:pointer; }
+  .menu button:hover{ background:var(--panel); }
+  .menu button.danger{ color:#ff8a8a; }
+  .dl-progress{ font-size:12px; color:var(--muted); min-width:76px; text-align:center; }
+  a.save-link{ background:var(--green); color:#0a1a0c; padding:10px 16px; border-radius:10px; font-size:13px; font-weight:700; text-decoration:none; }
+
+  .empty-note{ color:var(--muted); font-size:13px; padding:12px 0; }
+
+  .file-card{ display:flex; align-items:center; gap:14px; padding:14px 0; border-top:1px solid var(--line); cursor:pointer; }
+  .file-card:first-of-type{ border-top:none; }
+  .file-card:hover .file-name{ color:var(--green); }
+  .file-thumb{ width:56px; height:56px; border-radius:10px; object-fit:cover; background:#000; flex-shrink:0; }
+  .file-info{ flex:1; min-width:0; }
+  .file-name{ font-weight:700; font-size:14px; }
+  .file-sub{ font-size:12.5px; color:var(--muted); margin-top:3px; }
+  .file-open{ background:var(--panel-2); border:1px solid var(--line); color:var(--text); padding:8px 14px; border-radius:9px; font-size:12.5px; }
+
+  .note{ font-size:12px; color:var(--muted); margin-top:16px; line-height:1.5; }
+  .note b{ color:var(--text); }
+
+  /* preview modal */
+  #modalOverlay{ position:fixed; inset:0; background:rgba(4,7,5,0.82); display:none; align-items:center; justify-content:center; z-index:100; }
+  #modalOverlay.open{ display:flex; }
+  .modal-box{ background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:16px; display:flex; flex-direction:column; align-items:center; gap:12px; }
+  .modal-box video{ display:block; max-height:70vh; max-width:80vw; border-radius:12px; background:#000; }
+  .modal-box .modal-title{ font-weight:700; font-size:14px; align-self:flex-start; }
+  .modal-close{ align-self:flex-end; background:var(--panel-2); border:1px solid var(--line); color:var(--text); width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:14px; }
+
+  /* ---------- mobile / Android layout ---------- */
+  @media (max-width: 760px){
+    body{ flex-direction: column; padding-bottom: 64px; } /* room for bottom tab bar */
+    .sidebar{
+      width:100%; height:auto; flex-direction:row; align-items:center; justify-content:space-between;
+      padding:14px 16px; gap:0; border-right:none; border-bottom:1px solid var(--line);
+      position: sticky; top:0; z-index:30;
+    }
+    .sidebar nav{
+      position: fixed; left:0; right:0; bottom:0; z-index:30;
+      flex-direction:row; background:var(--sidebar); border-top:1px solid var(--line);
+      padding: 6px 10px calc(6px + env(safe-area-inset-bottom));
+      gap:0; justify-content:space-around;
+    }
+    .nav-item{ flex-direction:column; gap:3px; font-size:11px; padding:8px 10px; border-radius:12px; }
+    .nav-item .ic{ font-size:19px; width:auto; }
+
+    main{ padding: 16px 14px 30px; }
+    .topbar{ justify-content:space-between; margin-bottom:16px; }
+    .flow{ max-width:100%; }
+
+    .card{ padding:16px; border-radius:14px; }
+    .card-head{ flex-wrap:wrap; row-gap:10px; }
+    .card-head .right{ margin-left:0; width:100%; }
+    #addCutBtn{ width:100%; }
+
+    #dropzone{ padding:34px 16px; }
+
+    .clip-row{ flex-wrap:wrap; }
+    .clip-info{ min-width:55%; }
+    .clip-actions{ width:100%; justify-content:flex-end; margin-top:8px; }
+    .clip-thumb-wrap{ width:64px; height:64px; }
+
+    .icon-btn, .btn{ min-height:38px; }
+    .cut-marker{ padding: 6px; margin: -6px; } /* larger touch target without shifting visuals */
+
+    .modal-box video{ max-width:92vw; }
+
+    .file-card{ flex-wrap:wrap; }
+    .file-open{ margin-left:auto; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <div class="brand"><div class="mark"><i></i><i></i><i></i><i></i></div><span>Nescio</span></div>
+    <nav>
+      <div class="nav-item active" id="navHome"><span class="ic">🏠</span> Home</div>
+      <div class="nav-item" id="navFiles"><span class="ic">📁</span> My Files</div>
+    </nav>
+  </div>
+
+  <main>
+    <div class="topbar">
+      <button class="ghost-btn" id="changeFileBtn" style="display:none;">🔄 Change file</button>
+    </div>
+
+    <div class="flow" id="page-home">
+
+      <!-- Drop file -->
+      <div id="uploadSection">
+        <div id="dropzone">
+          <div class="cloud">☁️</div>
+          <div class="big">Drop file</div>
+          <div class="hint">Drag &amp; drop your episode here or click to <b>browse</b></div>
+        </div>
+        <div class="connector"><div class="circ">↓</div></div>
+      </div>
+      <input type="file" id="fileInput" accept="video/*">
+
+      <!-- Scan file -->
+      <div class="card">
+        <div class="card-head">
+          <div class="ic-circle">🔎</div>
+          <div>
+            <div class="card-title">Scan file</div>
+            <div class="card-sub" id="scanSub">Waiting for a file…</div>
+          </div>
+          <div class="right status-pill" id="scanStatus"></div>
+        </div>
+      </div>
+
+      <div class="connector"><div class="circ">↓</div></div>
+
+      <!-- Adding cuts -->
+      <div class="card">
+        <div class="card-head">
+          <div class="ic-circle">✂️</div>
+          <div>
+            <div class="card-title">Adding cuts</div>
+            <div class="card-sub">Drag markers to adjust, or add your own.</div>
+          </div>
+          <button class="btn btn-primary right" id="addCutBtn" disabled>+ Add Cut</button>
+        </div>
+        <div class="timeline-area">
+          <div class="timeline" id="timeline">
+            <div class="track"></div>
+            <div class="track-fill" id="trackFill"></div>
+          </div>
+          <div class="time-labels"><span id="timeLabelStart">00:00:00</span><span id="timeLabelEnd">00:00:00</span></div>
+        </div>
+      </div>
+
+      <div class="connector"><div class="circ">↓</div></div>
+
+      <!-- Clips -->
+      <div class="card">
+        <div class="card-head">
+          <div class="ic-circle">🎬</div>
+          <div>
+            <div class="card-title">Clips</div>
+            <div class="card-sub">Your file has been divided into clips.</div>
+          </div>
+        </div>
+        <div id="clipList" style="margin-top:6px;">
+          <div class="empty-note">Drop an episode above to get started.</div>
+        </div>
+        <div class="note">Every clip renders as a <b>9:16 blurred-background fit</b> — ready to upload to TikTok or Instagram Reels. Rendering happens locally when you hit Download, so nothing uploads anywhere.</div>
+      </div>
+
+    </div>
+
+    <div class="flow" id="page-files" style="display:none;">
+      <div class="card">
+        <div class="card-head">
+          <div class="ic-circle">📁</div>
+          <div>
+            <div class="card-title">My Files</div>
+            <div class="card-sub">Episodes you've uploaded this session.</div>
+          </div>
+        </div>
+        <div id="filesList" style="margin-top:14px;">
+          <div class="empty-note">No episodes uploaded yet.</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="modalOverlay">
+    <div class="modal-box">
+      <div class="modal-title" id="modalTitle">Preview</div>
+      <video id="modalVideo" controls autoplay></video>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const dropzone = document.getElementById('dropzone');
+  const uploadSection = document.getElementById('uploadSection');
+  const changeFileBtn = document.getElementById('changeFileBtn');
+  const fileInput = document.getElementById('fileInput');
+  const scanSub = document.getElementById('scanSub');
+  const scanStatus = document.getElementById('scanStatus');
+  const addCutBtn = document.getElementById('addCutBtn');
+  const timeline = document.getElementById('timeline');
+  const trackFill = document.getElementById('trackFill');
+  const timeLabelStart = document.getElementById('timeLabelStart');
+  const timeLabelEnd = document.getElementById('timeLabelEnd');
+  const clipList = document.getElementById('clipList');
+  const modalOverlay = document.getElementById('modalOverlay');
+  const modalVideo = document.getElementById('modalVideo');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalClose = document.getElementById('modalClose');
+  const navHome = document.getElementById('navHome');
+  const navFiles = document.getElementById('navFiles');
+  const pageHome = document.getElementById('page-home');
+  const pageFiles = document.getElementById('page-files');
+  const filesList = document.getElementById('filesList');
+
+  const video = document.createElement('video');
+  video.playsInline = true;
+  document.body.appendChild(video);
+
+  const OUT_W = 540, OUT_H = 960; // 9:16
+
+  let duration = 0;
+  let cutPoints = []; // interior cut times, seconds, sorted
+  let clipMeta = {};  // key: index -> {name, status, resultUrl, resultName, thumb, hidden}
+  let audioCtx=null, mediaSource=null, destNode=null;
+
+  // ---------- episode library (session only — files live in browser memory) ----------
+  let library = [];
+  let currentEpisode = null;
+  function syncCurrentEpisode(){
+    if (!currentEpisode || !duration) return;
+    currentEpisode.duration = duration;
+    currentEpisode.cutPoints = [...cutPoints];
+    currentEpisode.clipMeta = clipMeta;
+  }
+  function showPage(name){
+    pageHome.style.display = name === 'home' ? 'flex' : 'none';
+    pageFiles.style.display = name === 'files' ? 'flex' : 'none';
+    navHome.classList.toggle('active', name === 'home');
+    navFiles.classList.toggle('active', name === 'files');
+  }
+  navHome.addEventListener('click', () => showPage('home'));
+  navFiles.addEventListener('click', () => { syncCurrentEpisode(); renderFilesList(); showPage('files'); });
+
+  function renderFilesList(){
+    if (!library.length){ filesList.innerHTML = '<div class="empty-note">No episodes uploaded yet.</div>'; return; }
+    filesList.innerHTML = '';
+    library.forEach(entry => {
+      const cm = entry.clipMeta || {};
+      const clipCount = Object.keys(cm).length;
+      const firstThumb = cm[0] && cm[0].thumb ? cm[0].thumb : '';
+      const row = document.createElement('div');
+      row.className = 'file-card';
+      row.innerHTML = `
+        <img class="file-thumb" src="${firstThumb}" style="${firstThumb ? '' : 'display:none;'}">
+        <div class="file-info">
+          <div class="file-name">${entry.name}</div>
+          <div class="file-sub">${fmtClock(entry.duration)} · ${clipCount} clip${clipCount===1?'':'s'}</div>
+        </div>
+        <button class="file-open">Open</button>`;
+      row.addEventListener('click', () => openEpisode(entry));
+      filesList.appendChild(row);
+    });
+  }
+
+  function openEpisode(entry){
+    if (currentEpisode === entry){ showPage('home'); return; }
+    syncCurrentEpisode();
+    currentEpisode = entry;
+    duration = entry.duration;
+    cutPoints = [...entry.cutPoints];
+    clipMeta = entry.clipMeta;
+
+    video.src = entry.videoSrc;
+    video.muted = true;
+    video.load();
+    video.addEventListener('loadedmetadata', () => {
+      scanSub.textContent = entry.name;
+      scanStatus.innerHTML = '<span>✓</span><span>Completed</span>';
+      scanStatus.classList.add('done');
+      addCutBtn.disabled = false;
+      uploadSection.style.display = 'none';
+      changeFileBtn.style.display = 'inline-block';
+      timeLabelStart.textContent = fmtClock(0);
+      timeLabelEnd.textContent = fmtClock(duration);
+      renderMarkers();
+      renderClips();
+      showPage('home');
+    }, { once:true });
+  }
+
+  // A worker-driven ticker keeps the render loop running at full speed even if the
+  // browser tab is backgrounded/minimized — requestAnimationFrame gets throttled
+  // there, but a Worker's timer does not.
+  const tickerBlob = new Blob(['setInterval(()=>postMessage(1), 33);'], { type:'application/javascript' });
+  const ticker = new Worker(URL.createObjectURL(tickerBlob));
+
+  // Only one clip can render at a time (they all share the one hidden <video>).
+  let renderBusy = false;
+  const renderQueue = [];
+  function queueDownload(i){
+    if (renderBusy){
+      renderQueue.push(i);
+      const m = clipMeta[i];
+      m.status = 'queued';
+      renderDlSlot(i);
+      return;
+    }
+    runDownload(i);
+  }
+  function processQueue(){
+    renderBusy = false;
+    if (renderQueue.length){ runDownload(renderQueue.shift()); }
+  }
+
+  // ---------- file loading ----------
+  dropzone.addEventListener('click', () => fileInput.click());
+  ['dragover','dragenter'].forEach(ev => dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(ev => dropzone.addEventListener(ev, e => { e.preventDefault(); dropzone.classList.remove('drag'); }));
+  dropzone.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) loadFile(f); });
+  fileInput.addEventListener('change', e => { const f = e.target.files[0]; if (f) loadFile(f); });
+
+  function loadFile(file){
+    syncCurrentEpisode();
+    scanSub.textContent = 'Analyzing your file…';
+    scanStatus.innerHTML = '<div class="spinner"></div><span>Scanning…</span>';
+    scanStatus.classList.remove('done');
+    addCutBtn.disabled = true;
+    cutPoints = []; clipMeta = {};
+    renderClips(); renderMarkers();
+
+    const url = URL.createObjectURL(file);
+    video.src = url;
+    video.muted = true;
+    video.load();
+
+    video.addEventListener('loadedmetadata', () => {
+      duration = video.duration;
+      scanSub.textContent = file.name;
+      scanStatus.innerHTML = '<span>✓</span><span>Completed</span>';
+      scanStatus.classList.add('done');
+      addCutBtn.disabled = false;
+      uploadSection.style.display = 'none';
+      changeFileBtn.style.display = 'inline-block';
+      timeLabelStart.textContent = fmtClock(0);
+      timeLabelEnd.textContent = fmtClock(duration);
+      cutPoints = defaultCuts();
+      clipMeta = {}; if (currentEpisode) syncCurrentEpisode();
+      currentEpisode = { id: Date.now()+Math.random(), name: file.name, duration, cutPoints:[...cutPoints], clipMeta, videoSrc: url };
+      library.push(currentEpisode);
+      renderMarkers();
+      renderClips();
+      showPage('home');
+    }, { once:true });
+  }
+
+  changeFileBtn.addEventListener('click', () => fileInput.click());
+
+  function defaultCuts(){
+    const chunk = 50; // aim for ~50 second parts, upload-ready reel/short length
+    const n = Math.max(1, Math.round(duration/chunk));
+    const pts = [];
+    for (let i=1;i<n;i++) pts.push(Math.round(duration*i/n));
+    return pts;
+  }
+
+  function fmtClock(t){
+    if (!isFinite(t)) t = 0;
+    const h = Math.floor(t/3600), m = Math.floor((t%3600)/60), s = Math.floor(t%60);
+    return [h,m,s].map(v => String(v).padStart(2,'0')).join(':');
+  }
+  function fmtDur(t){
+    const m = Math.floor(t/60), s = Math.round(t%60);
+    return m > 0 ? `${m}m ${s}s` : `${s}s`;
+  }
+
+  function segments(){
+    const pts = [0, ...cutPoints, duration];
+    const segs = [];
+    for (let i=0;i<pts.length-1;i++) segs.push({start:pts[i], end:pts[i+1]});
+    return segs;
+  }
+
+  // ---------- timeline markers ----------
+  function renderMarkers(){
+    document.querySelectorAll('.cut-marker').forEach(el => el.remove());
+    if (!duration) { trackFill.style.width = '0%'; return; }
+    trackFill.style.width = (cutPoints.length ? (cutPoints[0]/duration*100) : 100) + '%';
+    cutPoints.forEach((t, i) => {
+      const el = document.createElement('div');
+      el.className = 'cut-marker';
+      el.style.left = (t/duration*100) + '%';
+      el.innerHTML = `<div class="num">${i+1}</div><div class="stick"></div><div class="remove-x" title="Remove this cut">✕</div>`;
+      el.querySelector('.remove-x').addEventListener('click', (e) => { e.stopPropagation(); cutPoints.splice(i,1); clipMeta = {}; if (currentEpisode) syncCurrentEpisode(); renderMarkers(); renderClips(); });
+      attachDrag(el, i);
+      timeline.appendChild(el);
+    });
+  }
+
+  function attachDrag(el, index){
+    el.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      const rect = timeline.getBoundingClientRect();
+      const onMove = (ev) => {
+        let pct = (ev.clientX - rect.left) / rect.width;
+        pct = Math.max(0, Math.min(1, pct));
+        let t = pct * duration;
+        const lo = index === 0 ? 1 : cutPoints[index-1] + 1;
+        const hi = index === cutPoints.length-1 ? duration - 1 : cutPoints[index+1] - 1;
+        t = Math.max(lo, Math.min(hi, t));
+        cutPoints[index] = t;
+        el.style.left = (t/duration*100) + '%';
+        trackFill.style.width = (cutPoints[0]/duration*100) + '%';
+      };
+      const onUp = () => {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        cutPoints.sort((a,b)=>a-b);
+        clipMeta = {}; if (currentEpisode) syncCurrentEpisode();
+        renderMarkers();
+        renderClips();
+      };
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp);
+    });
+  }
+
+  addCutBtn.addEventListener('click', () => {
+    const segs = segments();
+    let best = segs[0], bestLen = -1;
+    for (const s of segs){ const len = s.end - s.start; if (len > bestLen){ bestLen = len; best = s; } }
+    const t = Math.round((best.start + best.end) / 2);
+    cutPoints.push(t);
+    cutPoints.sort((a,b)=>a-b);
+    clipMeta = {}; if (currentEpisode) syncCurrentEpisode();
+    renderMarkers();
+    renderClips();
+  });
+
+  // ---------- clips list ----------
+  function ensureMeta(i, seg){
+    if (!clipMeta[i]) clipMeta[i] = { name: `Part ${i+1}`, status:'ready', resultUrl:null, resultName:null, thumb:null, hidden:false };
+  }
+
+  async function renderClips(){
+    const segs = segments();
+    if (!duration || !segs.length){
+      clipList.innerHTML = '<div class="empty-note">Drop an episode above to get started.</div>';
+      return;
+    }
+    clipList.innerHTML = '';
+    let shown = 0;
+    segs.forEach((seg, i) => {
+      ensureMeta(i, seg);
+      const m = clipMeta[i];
+      if (m.hidden) return;
+      shown++;
+      const row = document.createElement('div');
+      row.className = 'clip-row';
+      row.innerHTML = `
+        <div class="clip-thumb-wrap" data-i="${i}"><img src="${m.thumb || ''}" style="${m.thumb?'':'display:none;'}"><div class="play">▶</div></div>
+        <div class="clip-info">
+          <div class="clip-name" contenteditable="true" spellcheck="false" data-i="${i}">${m.name}</div>
+          <div class="clip-time">${fmtClock(seg.start)} — ${fmtClock(seg.end)}</div>
+          <div class="clip-dur">${fmtDur(seg.end-seg.start)}</div>
+        </div>
+        <div class="clip-actions" data-i="${i}">
+          <button class="btn btn-outline btn-preview" data-i="${i}">👁 Preview</button>
+          <span class="dl-slot" data-i="${i}"></span>
+          <button class="icon-btn menu-btn" data-i="${i}">⋮</button>
+          <div class="menu" data-i="${i}">
+            <button class="remove-cut-item" data-i="${i}" ${i===0 ? 'disabled style="opacity:.4;cursor:not-allowed;"':''}>Merge with previous part</button>
+            <button class="hide-clip-item danger" data-i="${i}">Remove this clip</button>
+          </div>
+        </div>`;
+      clipList.appendChild(row);
+      renderDlSlot(i);
+    });
+    if (shown === 0){
+      clipList.innerHTML = '<div class="empty-note">All clips removed — add a cut or merge parts to bring some back.</div>';
+    }
+
+    // wire events
+    clipList.querySelectorAll('.clip-name').forEach(el => {
+      el.addEventListener('blur', () => { const i = +el.dataset.i; clipMeta[i].name = el.textContent.trim() || `Part ${i+1}`; });
+      el.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); el.blur(); } });
+    });
+    clipList.querySelectorAll('.btn-preview').forEach(b => b.addEventListener('click', () => openPreview(+b.dataset.i)));
+    clipList.querySelectorAll('.clip-thumb-wrap').forEach(el => el.addEventListener('click', () => openPreview(+el.dataset.i)));
+    clipList.querySelectorAll('.menu-btn').forEach(b => b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const i = b.dataset.i;
+      document.querySelectorAll('.menu').forEach(m => { if (m.dataset.i !== i) m.classList.remove('open'); });
+      clipList.querySelector(`.menu[data-i="${i}"]`).classList.toggle('open');
+    }));
+    clipList.querySelectorAll('.remove-cut-item').forEach(b => b.addEventListener('click', () => {
+      const i = +b.dataset.i;
+      if (i > 0){ cutPoints.splice(i-1, 1); clipMeta = {}; if (currentEpisode) syncCurrentEpisode(); renderMarkers(); renderClips(); }
+    }));
+    clipList.querySelectorAll('.hide-clip-item').forEach(b => b.addEventListener('click', () => {
+      const i = +b.dataset.i;
+      clipMeta[i].hidden = true;
+      renderClips();
+    }));
+
+    // lazy thumbnails
+    for (let i=0;i<segs.length;i++){
+      if (clipMeta[i].hidden) continue;
+      if (!clipMeta[i].thumb){
+        try { clipMeta[i].thumb = await captureThumb(segs[i].start); updateThumbImg(i); } catch(e){ /* ignore */ }
+      }
+    }
+  }
+  document.addEventListener('click', () => document.querySelectorAll('.menu').forEach(m => m.classList.remove('open')));
+
+  function updateThumbImg(i){
+    const wrap = clipList.querySelector(`.clip-thumb-wrap[data-i="${i}"]`);
+    if (!wrap) return;
+    const img = wrap.querySelector('img');
+    img.src = clipMeta[i].thumb;
+    img.style.display = 'block';
+  }
+
+  function seekTo(t){
+    return new Promise(resolve => {
+      const onSeeked = () => { video.removeEventListener('seeked', onSeeked); resolve(); };
+      video.addEventListener('seeked', onSeeked);
+      video.currentTime = t;
+    });
+  }
+
+  async function captureThumb(t){
+    await seekTo(t);
+    const c = document.createElement('canvas');
+    c.width = 120; c.height = 120;
+    const cx = c.getContext('2d');
+    const vw = video.videoWidth, vh = video.videoHeight;
+    const side = Math.min(vw, vh);
+    cx.drawImage(video, (vw-side)/2, (vh-side)/2, side, side, 0, 0, 120, 120);
+    return c.toDataURL('image/jpeg', 0.7);
+  }
+
+  // ---------- preview modal ----------
+  let previewRange = null;
+  function openPreview(i){
+    const segs = segments();
+    const seg = segs[i];
+    const m = clipMeta[i];
+    modalTitle.textContent = m.name;
+    modalVideo.src = m.resultUrl || video.src;
+    modalOverlay.classList.add('open');
+    if (m.resultUrl){
+      modalVideo.currentTime = 0;
+      modalVideo.play();
+    } else {
+      previewRange = seg;
+      modalVideo.currentTime = seg.start;
+      modalVideo.play();
+    }
+  }
+  modalVideo.addEventListener('timeupdate', () => {
+    if (previewRange && !modalVideo.paused && modalVideo.currentTime >= previewRange.end){
+      modalVideo.pause();
+    }
+  });
+  function closeModal(){
+    modalVideo.pause();
+    modalOverlay.classList.remove('open');
+    previewRange = null;
+  }
+  modalClose.addEventListener('click', closeModal);
+  modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
+
+  // ---------- on-demand rendering ----------
+  function pickMimeType(){
+    const candidates = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+    for (const c of candidates){ if (window.MediaRecorder && MediaRecorder.isTypeSupported(c)) return c; }
+    return '';
+  }
+  function ensureAudioGraph(){
+    if (audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    mediaSource = audioCtx.createMediaElementSource(video);
+    destNode = audioCtx.createMediaStreamDestination();
+    mediaSource.connect(destNode);
+    mediaSource.connect(audioCtx.destination);
+  }
+
+  function renderDlSlot(i){
+    const slot = clipList.querySelector(`.dl-slot[data-i="${i}"]`);
+    if (!slot) return;
+    const m = clipMeta[i];
+    if (m.status === 'rendering'){
+      slot.innerHTML = `<span class="dl-progress" id="dlp-${i}">Rendering… 0%</span>`;
+    } else if (m.status === 'queued'){
+      slot.innerHTML = `<span class="dl-progress">Waiting…</span>`;
+    } else if (m.status === 'done'){
+      slot.innerHTML = `<a class="save-link" href="${m.resultUrl}" download="${m.resultName}">⬇ Save clip</a>`;
+    } else if (m.status === 'error'){
+      slot.innerHTML = `<span class="dl-progress" title="${m.error||''}" style="color:#ff8a8a;">failed</span><button class="btn btn-outline btn-download" data-i="${i}">Retry</button>`;
+      wireDownloadBtn(slot.querySelector('.btn-download'));
+    } else {
+      slot.innerHTML = `<button class="btn btn-primary btn-download" data-i="${i}">⬇ Download</button>`;
+      wireDownloadBtn(slot.querySelector('.btn-download'));
+    }
+  }
+  function wireDownloadBtn(btn){
+    if (!btn) return;
+    btn.addEventListener('click', () => queueDownload(+btn.dataset.i));
+  }
+
+  async function runDownload(i){
+    const segs = segments();
+    const seg = segs[i];
+    const m = clipMeta[i];
+    renderBusy = true;
+    m.status = 'rendering';
+    renderDlSlot(i);
+
+    let mime;
+    try {
+      ensureAudioGraph();
+      if (audioCtx.state === 'suspended') await audioCtx.resume();
+      mime = pickMimeType();
+      if (!mime && !window.MediaRecorder) throw new Error('This browser tab can\'t record video.');
+    } catch (err){
+      m.status = 'error'; m.error = err.message || String(err);
+      renderDlSlot(i);
+      processQueue();
+      return;
+    }
+    const ext = mime.startsWith('video/mp4') ? 'mp4' : 'webm';
+
+    try {
+      const { url, name } = await renderClip(seg, m.name, mime, ext, (pct) => {
+        const el = document.getElementById(`dlp-${i}`);
+        if (el) el.textContent = `Rendering… ${Math.round(pct*100)}%`;
+      });
+      m.status = 'done'; m.resultUrl = url; m.resultName = name;
+      renderDlSlot(i);
+    } catch (err){
+      console.error(err);
+      m.status = 'error'; m.error = err.message || String(err);
+      renderDlSlot(i);
+    }
+    processQueue();
+  }
+
+  function drawBlurFit(exCtx, w, h){
+    const vw = video.videoWidth, vh = video.videoHeight;
+    const targetRatio = w/h;
+    exCtx.clearRect(0,0,w,h);
+    exCtx.save();
+    exCtx.filter = 'blur(24px) brightness(0.55)';
+    let bgW, bgH;
+    if (vw/vh > targetRatio){ bgH = h; bgW = vw/vh*h; } else { bgW = w; bgH = vh/vw*w; }
+    exCtx.drawImage(video, (w-bgW)/2, (h-bgH)/2, bgW, bgH);
+    exCtx.restore();
+    let fgW, fgH;
+    if (vw/vh > targetRatio){ fgW = w; fgH = vh/vw*w; } else { fgH = h; fgW = vw/vh*h; }
+    exCtx.drawImage(video, (w-fgW)/2, (h-fgH)/2, fgW, fgH);
+  }
+
+  function renderClip(seg, name, mime, ext, onProgress){
+    return new Promise(async (resolve, reject) => {
+      try {
+        const exCanvas = document.createElement('canvas');
+        exCanvas.width = OUT_W; exCanvas.height = OUT_H;
+        const exCtx = exCanvas.getContext('2d');
+
+        await seekTo(seg.start);
+        drawBlurFit(exCtx, OUT_W, OUT_H);
+
+        const canvasStream = exCanvas.captureStream(0); // manual mode: we push frames ourselves
+        const videoTrack = canvasStream.getVideoTracks()[0];
+        const combined = new MediaStream([videoTrack, ...destNode.stream.getAudioTracks()]);
+        const recorder = new MediaRecorder(combined, mime ? { mimeType: mime, videoBitsPerSecond: 6_000_000 } : undefined);
+        const chunks = [];
+        recorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+        recorder.onerror = e => reject(new Error('Recorder error: ' + (e.error ? e.error.message : 'unknown')));
+        recorder.onstop = () => {
+          ticker.removeEventListener('message', onTick);
+          if (!chunks.length){ reject(new Error('No video data captured. Open this file directly in a Chrome tab (not a preview panel) and try again.')); return; }
+          const blob = new Blob(chunks, { type: mime || 'video/webm' });
+          const url = URL.createObjectURL(blob);
+          const safe = (name||'clip').trim().replace(/[^a-z0-9\-_]+/gi,'_').replace(/^_+|_+$/g,'') || 'clip';
+          resolve({ url, name: `nescio_${safe}.${ext}` });
+        };
+
+        video.muted = false;
+        try { await video.play(); }
+        catch(e){ ticker.removeEventListener('message', onTick); reject(new Error('Playback was blocked, so recording can\'t start. Open this file directly in a Chrome tab and try again.')); return; }
+
+        recorder.start(200);
+        const total = seg.end - seg.start;
+        let stopped = false;
+        function onTick(){
+          if (stopped) return;
+          drawBlurFit(exCtx, OUT_W, OUT_H);
+          videoTrack.requestFrame();
+          const elapsed = video.currentTime - seg.start;
+          onProgress(Math.min(1, Math.max(0, elapsed/total)));
+          if (video.currentTime >= seg.end || video.ended){
+            stopped = true;
+            video.pause(); video.muted = true;
+            recorder.stop();
+          }
+        }
+        ticker.addEventListener('message', onTick);
+      } catch (err){ reject(err); }
+    });
+  }
+
+})();
+</script>
+</body>
+</html>
